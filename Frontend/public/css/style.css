@@ -1,0 +1,536 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  color: #333;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Header and Join Form */
+.header {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 20px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.join-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.join-form input,
+.join-form select,
+.join-form button {
+  padding: 12px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.join-form button {
+  background: #4caf50;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.join-form button:hover {
+  background: #45a049;
+}
+
+/* Main Classroom Layout */
+.classroom {
+  display: none;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  min-height: calc(100vh - 200px);
+}
+
+.main-content {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 15px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- OVERLAY CHANGE 1: Slide Area acts as positioning context --- */
+.slide-area {
+  height: 400px;
+  border: 2px dashed #ddd;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  background: #f9f9f9;
+  position: relative; /* This is CRUCIAL for the overlay */
+  overflow: hidden;
+}
+
+.slide-content {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* Slide Controls */
+.slide-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.slide-info {
+  font-size: 14px;
+  color: #666;
+}
+
+.teacher-controls {
+  display: none;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.teacher-controls button,
+.audio-controls button {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 14px;
+}
+
+.teacher-controls .prev-btn {
+  background: #ff6b6b;
+  color: white;
+}
+.teacher-controls .prev-btn:hover {
+  background: #ff5252;
+}
+.teacher-controls .next-btn {
+  background: #4ecdc4;
+  color: white;
+}
+.teacher-controls .next-btn:hover {
+  background: #26c6da;
+}
+.upload-btn {
+  background: #95a5a6;
+  color: white;
+}
+.upload-btn:hover {
+  background: #7f8c8d;
+}
+
+.audio-controls {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* --- OVERLAY CHANGE 2: Whiteboard container is now an absolute positioned overlay --- */
+.whiteboard-container {
+  position: absolute; /* Changed from relative */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent; /* Changed from white */
+  z-index: 5; /* Ensure it's on top of the slide */
+}
+
+.whiteboard-canvas {
+  display: block;
+  cursor: crosshair;
+  touch-action: none;
+  width: 100%; /* Ensure canvas fills container */
+  height: 100%; /* Ensure canvas fills container */
+}
+
+.whiteboard-canvas.readonly {
+  cursor: default;
+}
+
+.whiteboard-controls {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 8px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.whiteboard-controls.hidden {
+  display: none;
+}
+
+.whiteboard-tool {
+  width: 32px;
+  height: 32px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.whiteboard-tool.active {
+  border-color: #2196f3;
+  background: #e3f2fd;
+}
+
+.whiteboard-tool:hover {
+  border-color: #2196f3;
+}
+
+.whiteboard-color-picker {
+  width: 32px;
+  height: 32px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  background: #000;
+}
+
+.whiteboard-size-slider {
+  width: 60px;
+  height: 32px;
+}
+
+.whiteboard-toggle {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+
+.whiteboard-toggle:hover {
+  background: #45a049;
+}
+
+.whiteboard-toggle.active {
+  background: #f44336;
+}
+
+.whiteboard-toggle.active:hover {
+  background: #d32f2f;
+}
+
+.whiteboard-status {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 10;
+}
+
+.whiteboard-sync-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+
+.whiteboard-sync-indicator.synced {
+  background: #4caf50;
+}
+.whiteboard-sync-indicator.syncing {
+  background: #ff9800;
+  animation: pulse 1s infinite;
+}
+.whiteboard-sync-indicator.error {
+  background: #f44336;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.slide-area.whiteboard-mode {
+  border: 2px solid #2196f3;
+}
+
+/* --- OVERLAY CHANGE 3: REMOVED rule that hides the slide --- */
+/* The following rule has been removed:
+.slide-area.whiteboard-mode .slide-content {
+  display: none;
+}
+*/
+
+.slide-area.whiteboard-mode #noSlideMessage {
+  display: none;
+}
+
+/* Audio Controls */
+.start-audio-btn {
+  background: #e74c3c;
+  color: white;
+}
+.start-audio-btn:hover {
+  background: #c0392b;
+}
+.stop-audio-btn {
+  background: #95a5a6;
+  color: white;
+}
+.stop-audio-btn:hover {
+  background: #7f8c8d;
+}
+
+/* Sidebar */
+.sidebar {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 15px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.participants {
+  margin-bottom: 20px;
+}
+.participants h3 {
+  margin-bottom: 10px;
+  color: #555;
+}
+
+.participant {
+  padding: 8px;
+  background: #f0f0f0;
+  border-radius: 6px;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.participant.teacher {
+  background: #e8f5e8;
+  font-weight: bold;
+}
+
+.chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.chat h3 {
+  margin-bottom: 10px;
+  color: #555;
+}
+
+.chat-messages {
+  flex: 1;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  overflow-y: auto;
+  max-height: 300px;
+  background: white;
+  margin-bottom: 10px;
+}
+
+.message {
+  margin-bottom: 10px;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.message.teacher {
+  background: #e3f2fd;
+  border-left: 3px solid #2196f3;
+}
+.message.student {
+  background: #f3e5f5;
+  border-left: 3px solid #9c27b0;
+}
+.message-header {
+  font-weight: bold;
+  color: #555;
+  margin-bottom: 4px;
+}
+
+.chat-input {
+  display: flex;
+  gap: 10px;
+}
+.chat-input input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+.chat-input button {
+  padding: 10px 15px;
+  background: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.chat-input button:hover {
+  background: #1976d2;
+}
+
+/* Status Indicators */
+.status {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 10px 15px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  z-index: 1000;
+}
+
+.status.connected {
+  background: #4caf50;
+  color: white;
+}
+.status.disconnected {
+  background: #f44336;
+  color: white;
+}
+
+.audio-status {
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 14px;
+  min-width: 150px;
+}
+
+.audio-status.streaming {
+  background: #c8e6c9;
+  color: #2e7d32;
+}
+.audio-status.stopped {
+  background: #ffcdd2;
+  color: #c62828;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.notification {
+  position: fixed;
+  top: 70px;
+  right: 20px;
+  padding: 10px 15px;
+  border-radius: 6px;
+  color: white;
+  font-size: 14px;
+  z-index: 1000;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .classroom {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .container {
+    padding: 10px;
+  }
+  .slide-area {
+    height: 250px;
+  }
+  .join-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .slide-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .teacher-controls {
+    flex-direction: column;
+  }
+  .audio-controls {
+    flex-direction: column;
+  }
+}
+
+/* Loading states for better UX */
+#currentSlide.loading {
+  opacity: 0.7;
+  filter: blur(1px);
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+#currentSlide.loading::after {
+  content: "Loading...";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-size: 14px;
+  z-index: 10;
+}

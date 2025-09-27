@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whiteboard Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-canvas {
+            border: 2px solid #333;
+            cursor: crosshair;
+            display: block;
+            margin: 20px 0;
+        }
+        .controls {
+            margin: 10px 0;
+        }
+        .controls button, .controls input {
+            margin: 5px;
+            padding: 8px;
+        }
+        .status {
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Whiteboard Library Test</h1>
+        
+        <div class="status" id="status">
+            Testing library loading...
+        </div>
+        
+        <div class="controls">
+            <button onclick="clearCanvas()">Clear</button>
+            <input type="color" id="colorPicker" value="#000000">
+            <input type="range" id="sizeSlider" min="1" max="20" value="3">
+            <span id="sizeValue">3px</span>
+        </div>
+        
+        <canvas id="testCanvas" class="test-canvas" width="600" height="400"></canvas>
+        
+        <div id="results"></div>
+    </div>
+
+    <script src="https://unpkg.com/yjs@13.6.10/dist/yjs.js"></script>
+    <script src="https://unpkg.com/idb@7.1.1/build/iife/index-min.js"></script>
+    
+    <script>
+        let canvas, ctx;
+        let isDrawing = false;
+        let lastX = 0, lastY = 0;
+        let currentColor = '#000000';
+        let currentSize = 3;
+
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.style.background = type === 'error' ? '#ffebee' : type === 'success' ? '#e8f5e8' : '#f0f0f0';
+        }
+
+        function testLibraries() {
+            const results = document.getElementById('results');
+            let html = '<h3>Library Test Results:</h3><ul>';
+            
+            // Test Yjs
+            if (typeof Y !== 'undefined') {
+                html += '<li style="color: green;">✅ Yjs library loaded successfully</li>';
+                try {
+                    const doc = new Y.Doc();
+                    const map = doc.getMap('test');
+                    map.set('test', 'value');
+                    html += '<li style="color: green;">✅ Yjs functionality working</li>';
+                } catch (e) {
+                    html += '<li style="color: red;">❌ Yjs functionality error: ' + e.message + '</li>';
+                }
+            } else {
+                html += '<li style="color: red;">❌ Yjs library not loaded</li>';
+            }
+            
+            // Test IndexedDB
+            if (typeof idb !== 'undefined') {
+                html += '<li style="color: green;">✅ IndexedDB library loaded successfully</li>';
+            } else {
+                html += '<li style="color: red;">❌ IndexedDB library not loaded</li>';
+            }
+            
+            html += '</ul>';
+            results.innerHTML = html;
+        }
+
+        function initCanvas() {
+            canvas = document.getElementById('testCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Set default drawing properties
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = currentSize;
+            
+            // Add event listeners
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            
+            // Touch events
+            canvas.addEventListener('touchstart', handleTouch);
+            canvas.addEventListener('touchmove', handleTouch);
+            canvas.addEventListener('touchend', stopDrawing);
+            
+            // Controls
+            document.getElementById('colorPicker').addEventListener('change', (e) => {
+                currentColor = e.target.value;
+                ctx.strokeStyle = currentColor;
+            });
+            
+            document.getElementById('sizeSlider').addEventListener('input', (e) => {
+                currentSize = parseInt(e.target.value);
+                ctx.lineWidth = currentSize;
+                document.getElementById('sizeValue').textContent = currentSize + 'px';
+            });
+        }
+
+        function handleTouch(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 
+                                             e.type === 'touchmove' ? 'mousemove' : 'mouseup', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            lastX = e.clientX - rect.left;
+            lastY = e.clientY - rect.top;
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const currentX = e.clientX - rect.left;
+            const currentY = e.clientY - rect.top;
+            
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(currentX, currentY);
+            ctx.stroke();
+            
+            lastX = currentX;
+            lastY = currentY;
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Initialize when page loads
+        window.onload = function() {
+            updateStatus('Initializing test...');
+            
+            setTimeout(() => {
+                testLibraries();
+                initCanvas();
+                updateStatus('Test ready! Try drawing on the canvas.', 'success');
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

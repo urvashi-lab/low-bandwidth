@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Virtual Classroom - Edunexus</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/yjs@13.6.8/dist/yjs.js"></script>
+
+    <link rel="stylesheet" href="./public/css/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div id="status" class="status disconnected">Connecting...</div>
+
+      <!-- ✅ Only parent stays hidden -->
+      <div id="classroom" class="classroom hidden">
+        <div class="main-content">
+          <div class="slide-area" id="slideArea">
+            <div id="noSlideMessage">
+              <p style="color: #999; font-size: 18px">
+                📋 Waiting for teacher to upload slides...
+              </p>
+            </div>
+            <!-- ❌ removed hidden -->
+            <img
+              id="currentSlide"
+              class="slide-content"
+              alt="Current Slide"
+              loading="lazy"
+            />
+            <!-- ❌ removed hidden -->
+            <div id="whiteboardContainer" class="whiteboard-container">
+              <canvas id="whiteboardCanvas" class="whiteboard-canvas"></canvas>
+              <!-- ❌ removed hidden -->
+              <div id="whiteboardControls" class="whiteboard-controls">
+                <div
+                  id="brushTool"
+                  class="whiteboard-tool active"
+                  title="Brush"
+                >
+                  ✏️
+                </div>
+                <div id="eraserTool" class="whiteboard-tool" title="Eraser">
+                  🧹
+                </div>
+                <input
+                  type="color"
+                  id="colorPicker"
+                  class="whiteboard-color-picker"
+                  value="#000000"
+                  title="Color"
+                />
+                <input
+                  type="range"
+                  id="sizeSlider"
+                  class="whiteboard-size-slider"
+                  min="1"
+                  max="20"
+                  value="3"
+                  title="Brush Size"
+                />
+                <div
+                  id="clearBoard"
+                  class="whiteboard-tool"
+                  title="Clear Board"
+                >
+                  🗑️
+                </div>
+              </div>
+              <div id="whiteboardStatus" class="whiteboard-status">
+                <span
+                  id="syncIndicator"
+                  class="whiteboard-sync-indicator synced"
+                ></span>
+                <span id="syncText">Synced</span>
+              </div>
+            </div>
+          </div>
+          <div class="slide-controls">
+            <div class="slide-info">
+              <span id="slideInfo">Slide 0 of 0</span>
+            </div>
+            <!-- ❌ removed hidden -->
+            <div id="teacherControls" class="teacher-controls">
+              <input
+                id="slideUpload"
+                type="file"
+                accept=".jpg,.jpeg,.png,.pdf,.pptx"
+                style="display: none"
+                onchange="handleFileUpload(event)"
+              />
+              <input
+                id="resourceUpload"
+                type="file"
+                style="display: none"
+                onchange="handleResourceUpload(event)"
+              />
+              <button class="upload-btn" onclick="triggerFileUpload()">
+                📤 Upload Slide
+              </button>
+              <button class="prev-btn" onclick="previousSlide()">
+                ⬅️ Previous
+              </button>
+              <button class="next-btn" onclick="nextSlide()">➡️ Next</button>
+              <button class="upload-btn" onclick="triggerResourceUpload()">
+                📦 Upload Resource
+              </button>
+            </div>
+            <div class="whiteboard-toggle-container">
+              <button
+                id="whiteboardToggle"
+                class="whiteboard-toggle"
+                onclick="toggleWhiteboard()"
+              >
+                🎨 Whiteboard
+              </button>
+            </div>
+          </div>
+          <!-- ❌ removed hidden -->
+          <div class="audio-controls">
+            <button
+              id="startAudioBtn"
+              class="start-audio-btn"
+              onclick="startAudio()"
+            >
+              🎤 Start Audio
+            </button>
+            <button
+              id="stopAudioBtn"
+              class="stop-audio-btn"
+              onclick="stopAudio()"
+            >
+              🔇 Stop Audio
+            </button>
+            <div id="audioStatus" class="audio-status stopped">
+              Audio: Stopped
+            </div>
+          </div>
+        </div>
+        <div class="sidebar">
+          <div class="participants">
+            <h3>👥 Participants (<span id="participantCount">0</span>)</h3>
+            <div id="participantsList"></div>
+          </div>
+          <div class="chat">
+            <h3>💬 Chat</h3>
+            <div id="chatMessages" class="chat-messages"></div>
+            <div class="chat-input">
+              <input
+                type="text"
+                id="chatInput"
+                placeholder="Type a message..."
+              />
+              <button onclick="sendMessage()">Send</button>
+            </div>
+          </div>
+          <div class="participants" style="margin-top: 16px">
+            <h3>📚 Resources</h3>
+            <div id="resourcesList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const username = urlParams.get("username");
+  
+  if (!username) {
+    alert("No user specified. Please login again.");
+    window.location.href = "/login.html";
+    return;
+  }
+  
+  window.currentUsername = username;
+  
+  const socket = io("http://localhost:3000");
+  window.socket = socket;
+  
+  socket.on("connect", () => {
+    console.log("Socket connected:", socket.id);
+    document.getElementById("status").textContent = "Connected - Joining classroom...";
+    document.getElementById("status").className = "status connected";
+    window.socketReady = true;
+    
+    // ❌ remove role here, server determines role from DB
+    socket.emit("join-classroom", { username });
+  });
+  
+  socket.on("classroom-joined", (state) => {
+    console.log("*** HTML: RECEIVED classroom-joined event ***", state);
+    document.getElementById("status").textContent = "Connected - In Classroom";
+
+    const classroom = document.getElementById("classroom");
+    classroom.classList.remove("hidden");
+    classroom.style.display = "grid";
+
+    // Enhanced role assignment with validation
+    window.userRole = state.userRole;
+    window.userName = state.userName;
+    window.userJoined = true;
+
+    console.log(">>> SET window.userRole =", window.userRole);
+    console.log(">>> SET window.userName =", window.userName);
+    
+    // Enhanced debugging for role assignment
+    console.log("Role assignment debug:", {
+      receivedRole: state.userRole,
+      assignedRole: window.userRole,
+      roleType: typeof window.userRole,
+      roleLength: window.userRole ? window.userRole.length : 0,
+      roleCharCodes: window.userRole ? Array.from(window.userRole).map(c => c.charCodeAt(0)) : [],
+      roleJSON: JSON.stringify(window.userRole)
+    });
+
+    setupRoleBasedUI(state.userRole);
+    
+    // Refresh resources to ensure remove buttons are added for teachers
+    setTimeout(() => {
+      if (typeof refreshResourcesForRole === 'function') {
+        refreshResourcesForRole();
+      }
+    }, 500);
+    
+    // Verify role assignment worked
+    setTimeout(() => {
+      console.log("Post-assignment verification:", {
+        windowUserRole: window.userRole,
+        isTeacher: window.userRole === "teacher",
+        normalizedCheck: window.userRole && window.userRole.toString().trim().toLowerCase() === "teacher"
+      });
+    }, 100);
+  });
+function setupRoleBasedUI(role) {
+    console.log("Setting up UI for role:", role);
+
+    const teacherControls = document.getElementById("teacherControls");
+    const whiteboardToggle = document.getElementById("whiteboardToggle");
+    const audioControls = document.querySelector(".audio-controls");
+
+    if (role === "teacher") {
+      teacherControls.style.display = "flex";
+      whiteboardToggle.style.display = "inline-block";
+      audioControls.style.display = "flex";
+    } else {
+      teacherControls.style.display = "none";
+      whiteboardToggle.style.display = "none";
+      audioControls.style.display = "none";
+    }
+
+    // 🔧 MOVED DEBUG CODE INSIDE THE FUNCTION
+    console.log("=== POST-SETUP UI DEBUG ===");
+    console.log("✅ Role-based UI setup completed");
+    console.log("User role:", role);
+    console.log("Elements found:");
+
+    // Check if all required elements exist
+    const elements = {
+      teacherControls: document.getElementById("teacherControls"),
+      whiteboardToggle: document.getElementById("whiteboardToggle"), 
+      audioControls: document.querySelector(".audio-controls"),
+      slideUpload: document.getElementById("slideUpload"),
+      startAudioBtn: document.getElementById("startAudioBtn"),
+      stopAudioBtn: document.getElementById("stopAudioBtn")
+    };
+
+    Object.entries(elements).forEach(([name, element]) => {
+      console.log(`- ${name}:`, element ? "✅ Found" : "❌ Missing");
+      if (element) {
+        console.log(`  Display: ${element.style.display || 'not set'}`);
+      }
+    });
+
+    // If teacher, test teacher functions
+    if (role === "teacher") {
+      console.log("🎯 TEACHER ROLE - Testing functions...");
+      
+      // Test function availability
+      const teacherFunctions = {
+        triggerFileUpload: window.triggerFileUpload,
+        handleFileUpload: window.handleFileUpload,
+        nextSlide: window.nextSlide,
+        previousSlide: window.previousSlide,
+        startAudio: window.startAudio,
+        stopAudio: window.stopAudio,
+        triggerResourceUpload: window.triggerResourceUpload
+      };
+      
+      Object.entries(teacherFunctions).forEach(([name, func]) => {
+        console.log(`- ${name}:`, typeof func === 'function' ? "✅ Available" : "❌ Missing");
+      });
+      
+      // Create a test button in console
+      console.log("💡 Run this in console to test teacher functions:");
+      console.log("window.debugTeacherControls()");
+      
+      // Enhanced debug function
+      window.debugTeacherControls = function() {
+        console.log("=== TEACHER CONTROLS TEST ===");
+        console.log("Role check:", window.userRole === "teacher");
+        console.log("Normalized role check:", window.userRole && window.userRole.toString().trim().toLowerCase() === "teacher");
+        console.log("Role details:", {
+          value: window.userRole,
+          type: typeof window.userRole,
+          length: window.userRole ? window.userRole.length : 0,
+          charCodes: window.userRole ? Array.from(window.userRole).map(c => c.charCodeAt(0)) : [],
+          json: JSON.stringify(window.userRole)
+        });
+        console.log("Upload button click test...");
+        try {
+          const uploadInput = document.getElementById("slideUpload");
+          if (uploadInput) {
+            console.log("✅ Upload input found");
+          } else {
+            console.log("❌ Upload input not found");
+          }
+        } catch (e) {
+          console.error("❌ Error testing upload:", e);
+        }
+      };
+    }
+
+    console.log("=== DEBUG SETUP COMPLETE ===");
+  }
+
+
+});
+</script>
+
+<script src="./public/js/app.js"></script>
+<script src="./public/js/whiteboard.js"></script>
+</body>
+</html>
