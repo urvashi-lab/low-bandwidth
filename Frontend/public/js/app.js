@@ -353,7 +353,11 @@ window.displaySlide = function (slideUrl) {
   const slideImg = document.getElementById("currentSlide");
   const noSlideMsg = document.getElementById("noSlideMessage");
   
-  console.log("Displaying slide:", slideUrl, "at index:", currentSlideNumber);
+  console.log("=== DISPLAY SLIDE ===");
+  console.log("Slide URL:", slideUrl);
+  console.log("Current slide number:", currentSlideNumber);
+  console.log("Slide image element:", slideImg);
+  console.log("No slide message element:", noSlideMsg);
   
   if (!slideUrl) {
     if (slideImg) slideImg.classList.add("hidden");
@@ -362,27 +366,85 @@ window.displaySlide = function (slideUrl) {
   }
   
   if (slideImg) {
+    // Hide the "no slide message" immediately when we start loading a slide
+    if (noSlideMsg) {
+      noSlideMsg.style.display = "none";
+    }
+    
     // Show loading state
     slideImg.classList.add("loading");
     
     slideImg.onload = () => {
-      console.log("Slide loaded successfully:", slideUrl);
+      console.log("=== SLIDE LOADED SUCCESSFULLY ===");
+      console.log("Slide URL:", slideUrl);
+      console.log("Image src:", slideImg.src);
+      console.log("Image natural width:", slideImg.naturalWidth);
+      console.log("Image natural height:", slideImg.naturalHeight);
+      console.log("Image complete:", slideImg.complete);
+      console.log("Image readyState:", slideImg.readyState);
+      
+      console.log("Removing loading class and hidden class");
       slideImg.classList.remove("loading");
       slideImg.classList.remove("hidden");
-      if (noSlideMsg) noSlideMsg.style.display = "none";
+      
+      // Force show the slide
+      slideImg.style.display = "block";
+      slideImg.style.visibility = "visible";
+      slideImg.style.width = "100%";
+      slideImg.style.height = "auto";
+      slideImg.style.maxWidth = "100%";
+      slideImg.style.maxHeight = "100%";
+      slideImg.style.objectFit = "contain";
+      
+      if (noSlideMsg) {
+        noSlideMsg.style.display = "none";
+        console.log("Hidden no slide message");
+      }
+      
+      console.log("Slide image display style:", getComputedStyle(slideImg).display);
+      console.log("Slide image visibility:", getComputedStyle(slideImg).visibility);
+      console.log("Slide image width:", getComputedStyle(slideImg).width);
+      console.log("Slide image height:", getComputedStyle(slideImg).height);
+      console.log("Slide image classes:", slideImg.className);
       
       // Preload next 2 slides for better performance
       preloadNextSlides(currentSlideNumber + 1, 2);
     };
     
     slideImg.onerror = function () {
+      console.error("=== SLIDE LOAD ERROR ===");
       console.error("Failed to load slide:", slideUrl);
+      console.error("Image src:", this.src);
+      console.error("Image complete:", this.complete);
       this.classList.add("hidden");
       this.classList.remove("loading");
       if (noSlideMsg) noSlideMsg.style.display = "block";
     };
     
     slideImg.src = slideUrl;
+    
+    // Fallback: Force show slide after a timeout if onload doesn't fire
+    setTimeout(() => {
+      if (slideImg.classList.contains("loading")) {
+        console.log("=== FALLBACK: FORCING SLIDE DISPLAY ===");
+        console.log("Image didn't load within timeout, forcing display");
+        
+        slideImg.classList.remove("loading", "hidden");
+        slideImg.style.display = "block";
+        slideImg.style.visibility = "visible";
+        slideImg.style.width = "100%";
+        slideImg.style.height = "auto";
+        slideImg.style.maxWidth = "100%";
+        slideImg.style.maxHeight = "100%";
+        slideImg.style.objectFit = "contain";
+        
+        if (noSlideMsg) {
+          noSlideMsg.style.display = "none";
+        }
+        
+        console.log("Fallback slide display applied");
+      }
+    }, 3000); // Wait 3 seconds for image to load
   }
 }
 
@@ -528,10 +590,13 @@ window.handleFileUpload = function(event) {
       } catch (e) {
         console.error("Failed to parse response:", e);
         showNotification("Upload completed but response parsing failed", "warning");
+      } finally {
+        hideProgressIndicator();
       }
     } else {
       console.error("Upload failed with status:", xhr.status);
       showNotification(`Upload failed: HTTP ${xhr.status}`, "error");
+      hideProgressIndicator();
     }
   });
   
@@ -665,6 +730,62 @@ window.showNotification = function(text, type = "info") {
       notification.remove();
     }
   }, 3000);
+}
+
+// Progress indicator function
+window.showProgressIndicator = function(text) {
+  // Remove any existing progress indicator
+  const existing = document.getElementById('progress-indicator');
+  if (existing) {
+    existing.remove();
+  }
+  
+  const progressDiv = document.createElement("div");
+  progressDiv.id = "progress-indicator";
+  progressDiv.className = "progress-indicator";
+  progressDiv.innerHTML = `
+    <div class="progress-content">
+      <div class="progress-spinner"></div>
+      <div class="progress-text">${text}</div>
+    </div>
+  `;
+  document.body.appendChild(progressDiv);
+}
+
+// Hide progress indicator function
+window.hideProgressIndicator = function() {
+  const progressDiv = document.getElementById('progress-indicator');
+  if (progressDiv) {
+    console.log("Hiding progress indicator");
+    progressDiv.remove();
+  } else {
+    console.log("Progress indicator not found to hide");
+  }
+}
+
+// Update progress indicator function
+window.updateProgressIndicator = function(percent, text) {
+  const progressDiv = document.getElementById('progress-indicator');
+  if (progressDiv) {
+    const progressText = progressDiv.querySelector('.progress-text');
+    if (progressText) {
+      progressText.textContent = text;
+    }
+    
+    // Add a progress bar if it doesn't exist
+    let progressBar = progressDiv.querySelector('.progress-bar');
+    if (!progressBar) {
+      progressBar = document.createElement('div');
+      progressBar.className = 'progress-bar';
+      progressBar.innerHTML = '<div class="progress-fill"></div>';
+      progressDiv.querySelector('.progress-content').appendChild(progressBar);
+    }
+    
+    const progressFill = progressBar.querySelector('.progress-fill');
+    if (progressFill) {
+      progressFill.style.width = `${percent}%`;
+    }
+  }
 }
 
 // Audio streaming functions
@@ -924,10 +1045,13 @@ window.handleResourceUpload = function(event) {
       } catch (e) {
         console.error("Failed to parse response:", e);
         showNotification(`Resource uploaded but response parsing failed`);
+      } finally {
+        hideProgressIndicator();
       }
     } else {
       console.error("Upload failed with status:", xhr.status);
       showNotification(`Failed to upload resource: HTTP ${xhr.status}`);
+      hideProgressIndicator();
     }
   });
   
@@ -1055,28 +1179,36 @@ function removeResourceFromList(resource) {
 }
 
 function deleteResource(resource) {
+  console.log("=== DELETE RESOURCE ===");
+  console.log("Resource data:", resource);
+  
   if (!resource.id || !resource.name) {
     try {
       const parts = (resource.url || "").split("/").filter(Boolean);
       const resourcesIndex = parts.indexOf("resources");
       resource.id = resource.id || parts[resourcesIndex + 1];
       resource.name = resource.name || parts[resourcesIndex + 2];
+      console.log("Parsed from URL - ID:", resource.id, "Name:", resource.name);
     } catch (error) {
       console.error("Error parsing resource URL:", error);
     }
   }
   
   if (!resource.id || !resource.name) {
+    console.error("Invalid resource - missing ID or name");
     return alert("Invalid resource - cannot delete");
   }
 
   const url = `/resources/${encodeURIComponent(resource.id)}/${encodeURIComponent(resource.name)}`;
+  console.log("DELETE URL:", url);
   
   fetch(url, { method: "DELETE" })
     .then((response) => {
+      console.log("Delete response status:", response.status);
       if (!response.ok) throw new Error("Delete failed");
       
       removeResourceFromList(resource);
+      showNotification("Resource deleted successfully!");
       
       if (navigator.serviceWorker && navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({
@@ -1084,21 +1216,29 @@ function deleteResource(resource) {
           payload: { urls: [resource.url] },
         });
       }
-      
-      showNotification("Resource deleted successfully!");
     })
     .catch((error) => {
       console.error("Delete resource error:", error);
+      showNotification("Failed to delete resource", "error");
       alert("Failed to delete resource: " + error.message);
     });
 }
 
 function appendRemoveButton(actionsEl, resource) {
+  console.log("=== APPEND REMOVE BUTTON ===");
+  console.log("Actions element:", actionsEl);
+  console.log("Resource:", resource);
+  
   const removeBtn = document.createElement("button");
   removeBtn.textContent = "Remove";
   removeBtn.className = "resource-button remove";
-  removeBtn.onclick = () => deleteResource(resource);
+  removeBtn.onclick = () => {
+    console.log("Remove button clicked for resource:", resource);
+    deleteResource(resource);
+  };
   actionsEl.appendChild(removeBtn);
+  
+  console.log("Remove button added successfully");
 }
 
 function ensureTeacherActionsOnResources() {
@@ -1575,4 +1715,99 @@ window.testUploadButtons = function() {
   }
   
   console.log("🔘 UPLOAD BUTTON TESTING COMPLETE 🔘");
+}
+
+// Debug function specifically for slide issues
+window.debugSlides = function() {
+  console.log("=== DEBUG SLIDES ===");
+  
+  console.log("1. SLIDE DATA:");
+  console.log("   - Total slides:", totalSlides);
+  console.log("   - Current slide number:", currentSlideNumber);
+  console.log("   - Slides array:", slides);
+  console.log("   - Current slide URL:", slides[currentSlideNumber]);
+  
+  console.log("2. SLIDE ELEMENTS:");
+  const slideImg = document.getElementById("currentSlide");
+  const noSlideMsg = document.getElementById("noSlideMessage");
+  console.log("   - Slide image element:", !!slideImg);
+  console.log("   - No slide message element:", !!noSlideMsg);
+  
+  if (slideImg) {
+    console.log("   - Slide image src:", slideImg.src);
+    console.log("   - Slide image classes:", slideImg.className);
+    console.log("   - Slide image display:", getComputedStyle(slideImg).display);
+    console.log("   - Slide image visibility:", getComputedStyle(slideImg).visibility);
+  }
+  
+  if (noSlideMsg) {
+    console.log("   - No slide message display:", noSlideMsg.style.display);
+  }
+  
+  console.log("3. PROGRESS INDICATOR:");
+  const progressDiv = document.getElementById('progress-indicator');
+  console.log("   - Progress indicator exists:", !!progressDiv);
+  if (progressDiv) {
+    console.log("   - Progress indicator display:", getComputedStyle(progressDiv).display);
+  }
+  
+  console.log("4. TEST SLIDE DISPLAY:");
+  if (slides.length > 0 && slides[currentSlideNumber]) {
+    console.log("   - Calling displaySlide with:", slides[currentSlideNumber]);
+    displaySlide(slides[currentSlideNumber]);
+  } else {
+    console.log("   - No slides available to display");
+  }
+  
+  console.log("=== END SLIDE DEBUG ===");
+}
+
+// Quick fix function for slide visibility issues
+window.fixSlideVisibility = function() {
+  console.log("=== FIXING SLIDE VISIBILITY ===");
+  
+  const slideImg = document.getElementById("currentSlide");
+  const noSlideMsg = document.getElementById("noSlideMessage");
+  
+  if (slideImg) {
+    // Remove any hiding classes and force show
+    slideImg.classList.remove("hidden", "loading");
+    slideImg.style.display = "block";
+    slideImg.style.visibility = "visible";
+    slideImg.style.width = "100%";
+    slideImg.style.height = "auto";
+    slideImg.style.maxWidth = "100%";
+    slideImg.style.maxHeight = "100%";
+    slideImg.style.objectFit = "contain";
+    console.log("✅ Fixed slide image visibility");
+    console.log("Slide src:", slideImg.src);
+    console.log("Slide dimensions:", slideImg.naturalWidth, "x", slideImg.naturalHeight);
+  }
+  
+  if (noSlideMsg) {
+    noSlideMsg.style.display = "none";
+    console.log("✅ Hidden no slide message");
+  }
+  
+  console.log("=== SLIDE VISIBILITY FIXED ===");
+}
+
+// Test slide URL accessibility
+window.testSlideUrl = function(url) {
+  console.log("=== TESTING SLIDE URL ===");
+  console.log("URL:", url);
+  
+  fetch(url, { method: 'HEAD' })
+    .then(response => {
+      console.log("Response status:", response.status);
+      console.log("Response headers:", response.headers);
+      if (response.ok) {
+        console.log("✅ URL is accessible");
+      } else {
+        console.log("❌ URL returned error:", response.status);
+      }
+    })
+    .catch(error => {
+      console.log("❌ URL is not accessible:", error);
+    });
 }

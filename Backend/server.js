@@ -30,7 +30,7 @@ const io = socketIo(server, {
 
 
 app.get("/", (req, res) => {
-  res.send("home Page");
+  res.redirect("/login");
 });
 
 // CRITICAL: Add these middleware BEFORE your routes

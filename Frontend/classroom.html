@@ -245,16 +245,22 @@ function setupRoleBasedUI(role) {
       teacherControls.style.display = "flex";
       whiteboardToggle.style.display = "inline-block";
       audioControls.style.display = "flex";
+      // Set data attribute for CSS selector
+      document.body.setAttribute("data-user-role", "teacher");
     } else {
       teacherControls.style.display = "none";
       whiteboardToggle.style.display = "none";
       audioControls.style.display = "none";
+      // Set data attribute for CSS selector
+      document.body.setAttribute("data-user-role", "student");
     }
 
     // 🔧 MOVED DEBUG CODE INSIDE THE FUNCTION
     console.log("=== POST-SETUP UI DEBUG ===");
     console.log("✅ Role-based UI setup completed");
     console.log("User role:", role);
+    console.log("Body data-user-role:", document.body.getAttribute("data-user-role"));
+    console.log("Teacher controls display:", teacherControls.style.display);
     console.log("Elements found:");
 
     // Check if all required elements exist
@@ -326,6 +332,32 @@ function setupRoleBasedUI(role) {
     console.log("=== DEBUG SETUP COMPLETE ===");
   }
 
+  // Debug function to check teacher controls visibility
+  window.debugTeacherControls = function() {
+    console.log("=== DEBUG TEACHER CONTROLS ===");
+    
+    const teacherControls = document.getElementById("teacherControls");
+    const role = window.userRole;
+    
+    console.log("1. ROLE CHECK:");
+    console.log("   - window.userRole:", role);
+    console.log("   - document.body data-user-role:", document.body.getAttribute("data-user-role"));
+    
+    console.log("2. TEACHER CONTROLS ELEMENT:");
+    console.log("   - Element found:", !!teacherControls);
+    console.log("   - Computed display:", teacherControls ? getComputedStyle(teacherControls).display : "N/A");
+    console.log("   - Inline style display:", teacherControls?.style.display);
+    console.log("   - CSS classes:", teacherControls?.className);
+    
+    console.log("3. FORCE SHOW TEACHER CONTROLS:");
+    if (teacherControls) {
+      teacherControls.style.display = "flex";
+      document.body.setAttribute("data-user-role", "teacher");
+      console.log("   - ✅ Set display: flex and data-user-role: teacher");
+    }
+    
+    console.log("=== END TEACHER CONTROLS DEBUG ===");
+  }
 
 });
 </script>

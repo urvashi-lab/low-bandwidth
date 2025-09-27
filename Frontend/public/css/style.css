@@ -114,6 +114,16 @@ body {
   flex-wrap: wrap;
 }
 
+/* Ensure teacher controls are visible for teachers */
+.teacher-controls[style*="display: flex"] {
+  display: flex !important;
+}
+
+/* Alternative: Show teacher controls when user is teacher (using data attribute) */
+body[data-user-role="teacher"] .teacher-controls {
+  display: flex !important;
+}
+
 .teacher-controls button,
 .audio-controls button {
   padding: 10px 15px;
@@ -484,6 +494,65 @@ body {
     transform: translateX(0);
     opacity: 1;
   }
+}
+
+/* Progress Indicator Styles */
+.progress-indicator {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.95);
+  padding: 20px 30px;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  z-index: 2000;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.progress-content {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.progress-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e1e5e9;
+  border-top: 2px solid #4caf50;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.progress-text {
+  color: #333;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Progress Bar Styles */
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: #e1e5e9;
+  border-radius: 2px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #4caf50;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  width: 0%;
 }
 
 /* Responsive Design */
