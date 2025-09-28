@@ -95,6 +95,7 @@ function initSockets(server) {
         socketId: socket.id,
         joinedAt: Date.now(),
       });
+      classroomState.participants = Array.from(connectedClients.values());
       if (role === "teacher") classroomState.isTeacherPresent = true;
       classroomState.participants = Array.from(connectedClients.values());
       socket.emit("classroom-state", classroomState);

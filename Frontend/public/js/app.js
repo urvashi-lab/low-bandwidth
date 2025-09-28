@@ -238,6 +238,10 @@ function setupSocketEventHandlers() {
   socket.on("whiteboard-state", handleWhiteboardState);
   socket.on("whiteboard-clear", handleWhiteboardClear);
   socket.on("whiteboard-toggle", handleWhiteboardToggle);
+  socket.on("classroom-joined", (state) => {
+  console.log("=== CLASSROOM JOINED ===", state);
+  updateClassroomState(state);
+});
 
   socket.on("resource-added", (resource) => {
     if (navigator.serviceWorker && navigator.serviceWorker.controller) {

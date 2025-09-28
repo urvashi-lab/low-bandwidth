@@ -503,9 +503,11 @@ io.on("connection", (socket) => {
       socket.emit("classroom-joined", stateToSend);
       console.log(`Sent classroom state to ${user.fullName}`);
 
-      // Notify ALL clients (including the one who just joined) about updated participants
-      io.emit("participants-updated", classroomState.participants);
-      console.log("Broadcasted participants update to all clients");
+      setTimeout(() => {
+    // Notify ALL clients about updated participants (including the one who just joined)
+    io.emit("participants-updated", classroomState.participants);
+    console.log("Broadcasted participants update to all clients after delay");
+}, 500);
 
     } catch (err) {
       console.error("Join classroom error:", err);
